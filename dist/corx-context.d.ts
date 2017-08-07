@@ -7,15 +7,14 @@ export declare class CorxRunCtx {
     private _isDone;
     private _waited;
     constructor(_generator: Generator, _subscriber: Subscriber<any>);
-    private next({value, error});
-    private processValue(value);
-    private onPromise(promise);
-    private onPut(operator);
-    private onChain(observable);
-    private onWait(observable);
-    private publish(value);
-    private onCancel();
-    private complete();
-    private error(error);
-    private trySetDone();
+    private _next({value, error});
+    private _processValue(value);
+    private _onPromise(promise);
+    private _onPut(operator);
+    private _onWait(observable, publishValues?);
+    private _publish(value);
+    private _onCancel();
+    private _complete();
+    private _error(error);
+    private _trySetDone();
 }

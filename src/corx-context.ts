@@ -53,14 +53,19 @@ export class CorxRunCtx {
       this._onPromise(value);
     } else if (value instanceof CorxOpertor) {
       const operator = value as CorxOpertor;
-      if (operator.symbol === symbols.put) {
-        this._onPut(operator);
-      } else if (operator.symbol === symbols.chain) {
-        this._onChain(operator.args[0]);
-      } else if (operator.symbol === symbols.wait) {
-        this._onWait(operator.args[0]);
-      } else {
-        this._error(new Error(`unknown operator: ${operator.symbol}`));
+      switch (operator.symbol) {
+        case symbols.put:
+          this._onPut(operator);
+          break;
+        case symbols.chain:
+          this._onWait(operator.args[0], true);
+          break;
+        case symbols.wait:
+          this._onWait(operator.args[0]);
+          break;
+        default:
+          this._error(new Error(`unknown operator: ${operator.symbol}`));
+          break;
       }
     } else {
       this._error(new Error(`must not yield such value: ${value}.`));
@@ -79,24 +84,13 @@ export class CorxRunCtx {
     this._next({});
   }
 
-  private _onChain(observable: Observable<any>): void {
+  private _onWait(observable: Observable<any>, publishValues: boolean = false): void {
     let lastValue;
     this._waited = observable.subscribe(nextValue => {
       lastValue = nextValue;
-      this._publish(nextValue);
-    }, error => {
-      this._waited = null;
-      this._next({ error });
-    }, () => {
-      this._waited = null;
-      this._next({ value: lastValue });
-    });
-  }
-
-  private _onWait(observable: Observable<any>): void {
-    let lastValue;
-    this._waited = observable.subscribe(nextValue => {
-      lastValue = nextValue;
+      if (publishValues) {
+        this._publish(nextValue);
+      }
     }, error => {
       this._waited = null;
       this._next({ error });

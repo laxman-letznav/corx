@@ -9,16 +9,16 @@ var CorxRunCtx = (function () {
         this._subscriber = _subscriber;
         this._isCanceled = false;
         this._isDone = false;
-        this.next({});
+        this._next({});
     }
     Object.defineProperty(CorxRunCtx.prototype, "cancel", {
         get: function () {
-            return this.onCancel.bind(this);
+            return this._onCancel.bind(this);
         },
         enumerable: true,
         configurable: true
     });
-    CorxRunCtx.prototype.next = function (_a) {
+    CorxRunCtx.prototype._next = function (_a) {
         var value = _a.value, error = _a.error;
         if (this._isDone) {
             return;
@@ -35,102 +35,94 @@ var CorxRunCtx = (function () {
                 return;
             }
             if (result.done) {
-                this.complete();
+                this._complete();
                 return;
             }
-            this.processValue(result.value);
+            this._processValue(result.value);
         }
         catch (ex) {
-            this.error(ex);
+            this._error(ex);
         }
     };
-    CorxRunCtx.prototype.processValue = function (value) {
+    CorxRunCtx.prototype._processValue = function (value) {
         if (value instanceof rxjs_1.Observable) {
-            this.onWait(value);
+            this._onWait(value);
         }
         else if (utils_1.isPromise(value)) {
-            this.onPromise(value);
+            this._onPromise(value);
         }
         else if (value instanceof operators_1.CorxOpertor) {
             var operator = value;
-            if (operator.symbol === operators_1.symbols.put) {
-                this.onPut(operator);
-            }
-            else if (operator.symbol === operators_1.symbols.chain) {
-                this.onChain(operator.args[0]);
-            }
-            else if (operator.symbol === operators_1.symbols.wait) {
-                this.onWait(operator.args[0]);
-            }
-            else {
-                this.error(new Error("unknown operator: " + operator.symbol));
+            switch (operator.symbol) {
+                case operators_1.symbols.put:
+                    this._onPut(operator);
+                    break;
+                case operators_1.symbols.chain:
+                    this._onWait(operator.args[0], true);
+                    break;
+                case operators_1.symbols.wait:
+                    this._onWait(operator.args[0]);
+                    break;
+                default:
+                    this._error(new Error("unknown operator: " + operator.symbol));
+                    break;
             }
         }
         else {
-            this.error(new Error("must not yield such value: " + value + "."));
+            this._error(new Error("must not yield such value: " + value + "."));
         }
     };
-    CorxRunCtx.prototype.onPromise = function (promise) {
+    CorxRunCtx.prototype._onPromise = function (promise) {
         var _this = this;
-        promise.then(function (value) { return _this.next({ value: value }); }, function (error) { return _this.next({ error: error }); });
+        promise.then(function (value) { return _this._next({ value: value }); }, function (error) { return _this._next({ error: error }); });
     };
-    CorxRunCtx.prototype.onPut = function (operator) {
+    CorxRunCtx.prototype._onPut = function (operator) {
         var _this = this;
-        operator.args.forEach(function (arg) { return _this.publish(arg); });
-        this.next({});
+        operator.args.forEach(function (arg) { return _this._publish(arg); });
+        this._next({});
     };
-    CorxRunCtx.prototype.onChain = function (observable) {
+    CorxRunCtx.prototype._onWait = function (observable, publishValues) {
         var _this = this;
+        if (publishValues === void 0) { publishValues = false; }
         var lastValue;
         this._waited = observable.subscribe(function (nextValue) {
             lastValue = nextValue;
-            _this.publish(nextValue);
+            if (publishValues) {
+                _this._publish(nextValue);
+            }
         }, function (error) {
             _this._waited = null;
-            _this.next({ error: error });
+            _this._next({ error: error });
         }, function () {
             _this._waited = null;
-            _this.next({ value: lastValue });
+            _this._next({ value: lastValue });
         });
     };
-    CorxRunCtx.prototype.onWait = function (observable) {
-        var _this = this;
-        var lastValue;
-        this._waited = observable.subscribe(function (nextValue) {
-            lastValue = nextValue;
-        }, function (error) {
-            _this._waited = null;
-            _this.next({ error: error });
-        }, function () {
-            _this._waited = null;
-            _this.next({ value: lastValue });
-        });
-    };
-    CorxRunCtx.prototype.publish = function (value) {
+    CorxRunCtx.prototype._publish = function (value) {
         if (this._isDone) {
             return;
         }
         this._subscriber.next(value);
     };
-    CorxRunCtx.prototype.onCancel = function () {
-        if (!this.trySetDone()) {
+    CorxRunCtx.prototype._onCancel = function () {
+        if (!this._trySetDone()) {
             return;
         }
         this._isCanceled = true;
     };
-    CorxRunCtx.prototype.complete = function () {
-        if (!this.trySetDone()) {
+    CorxRunCtx.prototype._complete = function () {
+        if (!this._trySetDone()) {
             return;
         }
         this._subscriber.complete();
     };
-    CorxRunCtx.prototype.error = function (error) {
-        if (!this.trySetDone()) {
+    CorxRunCtx.prototype._error = function (error) {
+        if (!this._trySetDone()) {
             return;
         }
         this._subscriber.error(error);
     };
-    CorxRunCtx.prototype.trySetDone = function () {
+    CorxRunCtx.prototype._trySetDone = function () {
         if (this._isDone) {
             return false;
         }
