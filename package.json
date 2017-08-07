@@ -1,0 +1,39 @@
+{
+  "name": "corx",
+  "version": "1.0.0",
+  "description": "Generator to RxJs Observable convertor",
+  "main": "dist/index.js",
+  "dependencies": {
+    "rxjs": "^5.x.x"
+  },
+  "devDependencies": {
+    "@types/mocha": "2.2.41",
+    "@types/node": "8.0.19",
+    "mocha": "3.5.0",
+    "ts-node": "3.3.0",
+    "tslint": "5.2.0",
+    "typescript": "2.4.2"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha -r ts-node/register src/**/*.spec.ts",
+    "tslint": "tslint \"src/**/*.ts\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/salsita/corx.git"
+  },
+  "author": "Salsita",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/salsita/corx/issues"
+  },
+  "homepage": "https://github.com/salsita/corx#readme",
+  "keywords": [
+    "Observables",
+    "Observable",
+    "Rx",
+    "RxJS",
+    "generator"
+  ]
+}
