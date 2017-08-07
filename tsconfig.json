@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "allowJs": true,
     "target": "es5",
     "noUnusedLocals": true,
     "outDir": "./dist",
-    "removeComments": true,
+    "declaration": true,
     "sourceMap": true,
     "lib": [
       "es6",
