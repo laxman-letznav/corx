@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "target": "es5",
+    "noUnusedLocals": true,
+    "outDir": "./dist",
+    "removeComments": true,
+    "sourceMap": true,
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts",
+    "node_modules",
+    "dist"
+  ],
+  "compileOnSave": false
+}

@@ -1,0 +1,45 @@
+{
+  "extends": [
+    "tslint:recommended"
+  ],
+  "rules": {
+    "arrow-parens": [true, "ban-single-arg-parens"],
+    "interface-name": [
+      false,
+      "always-prefix"
+    ],
+    "no-console": [true,
+      "log",
+      "time",
+      "timeEnd",
+      "trace"
+    ],
+    "max-line-length": [
+      true,
+      140
+    ],
+    "no-namespace": [true, "allow-declarations"],
+    "no-string-literal": false,
+    "no-trailing-whitespace": true,
+    "no-unsafe-finally": true,
+    "no-use-before-declare": true,
+    "object-literal-sort-keys": false,
+    "ordered-imports": [false],
+    "quotemark": [
+      true,
+      "single",
+      "avoid-escape"
+    ],
+    "trailing-comma": [false, {"multiline": "always", "singleline": "never"}],
+    "typedef": [
+      true, "call-signature", "parameter"
+    ],
+    "variable-name": [
+      true,
+      "allow-leading-underscore",
+      "allow-pascal-case",
+      "ban-keywords",
+      "check-format"
+    ]
+  }
+}
