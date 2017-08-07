@@ -5,7 +5,7 @@ import { isPromise } from './utils';
 
 export class CorxRunCtx {
   public get cancel(): () => any {
-    return this.onCancel.bind(this);
+    return this._onCancel.bind(this);
   }
 
   private _isCanceled: boolean = false;
@@ -15,10 +15,10 @@ export class CorxRunCtx {
   constructor(
     private _generator: Generator,
     private _subscriber: Subscriber<any>) {
-    this.next({});
+    this._next({});
   }
 
-  private next({ value, error }: { value?: any, error?: any }): void {
+  private _next({ value, error }: { value?: any, error?: any }): void {
     if (this._isDone) {
       return;
     }
@@ -36,102 +36,102 @@ export class CorxRunCtx {
       }
 
       if (result.done) {
-        this.complete();
+        this._complete();
         return;
       }
 
-      this.processValue(result.value);
+      this._processValue(result.value);
     } catch (ex) {
-      this.error(ex);
+      this._error(ex);
     }
   }
 
-  private processValue(value: any): void {
+  private _processValue(value: any): void {
     if (value instanceof Observable) {
-      this.onWait(value);
+      this._onWait(value);
     } else if (isPromise(value)) {
-      this.onPromise(value);
+      this._onPromise(value);
     } else if (value instanceof CorxOpertor) {
       const operator = value as CorxOpertor;
       if (operator.symbol === symbols.put) {
-        this.onPut(operator);
+        this._onPut(operator);
       } else if (operator.symbol === symbols.chain) {
-        this.onChain(operator.args[0]);
+        this._onChain(operator.args[0]);
       } else if (operator.symbol === symbols.wait) {
-        this.onWait(operator.args[0]);
+        this._onWait(operator.args[0]);
       } else {
-        this.error(new Error(`unknown operator: ${operator.symbol}`));
+        this._error(new Error(`unknown operator: ${operator.symbol}`));
       }
     } else {
-      this.error(new Error(`must not yield such value: ${value}.`));
+      this._error(new Error(`must not yield such value: ${value}.`));
     }
   }
 
-  private onPromise(promise: Promise<any>): void {
+  private _onPromise(promise: Promise<any>): void {
     promise.then(
-      value => this.next({ value }),
-      error => this.next({ error })
+      value => this._next({ value }),
+      error => this._next({ error })
     );
   }
 
-  private onPut(operator: CorxOpertor): void {
-    operator.args.forEach(arg => this.publish(arg));
-    this.next({});
+  private _onPut(operator: CorxOpertor): void {
+    operator.args.forEach(arg => this._publish(arg));
+    this._next({});
   }
 
-  private onChain(observable: Observable<any>): void {
+  private _onChain(observable: Observable<any>): void {
     let lastValue;
     this._waited = observable.subscribe(nextValue => {
       lastValue = nextValue;
-      this.publish(nextValue);
+      this._publish(nextValue);
     }, error => {
       this._waited = null;
-      this.next({ error });
+      this._next({ error });
     }, () => {
       this._waited = null;
-      this.next({ value: lastValue });
+      this._next({ value: lastValue });
     });
   }
 
-  private onWait(observable: Observable<any>): void {
+  private _onWait(observable: Observable<any>): void {
     let lastValue;
     this._waited = observable.subscribe(nextValue => {
       lastValue = nextValue;
     }, error => {
       this._waited = null;
-      this.next({ error });
+      this._next({ error });
     }, () => {
       this._waited = null;
-      this.next({ value: lastValue });
+      this._next({ value: lastValue });
     });
   }
 
-  private publish(value: any): void {
+  private _publish(value: any): void {
     if (this._isDone) {
       return;
     }
     this._subscriber.next(value);
   }
 
-  private onCancel(): void {
-    if (!this.trySetDone()) { return; }
+  private _onCancel(): void {
+    if (!this._trySetDone()) { return; }
 
     this._isCanceled = true;
   }
 
-  private complete(): void {
-    if (!this.trySetDone()) { return; }
+  private _complete(): void {
+    if (!this._trySetDone()) { return; }
 
     this._subscriber.complete();
   }
 
-  private error(error: any): void {
-    if (!this.trySetDone()) { return; }
+  private _error(error: any): void {
+    if (!this._trySetDone()) { return; }
 
     this._subscriber.error(error);
   }
 
-  private trySetDone(): boolean {
+  private _trySetDone(): boolean {
     if (this._isDone) {
       return false;
     }
