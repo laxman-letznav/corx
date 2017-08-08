@@ -18,7 +18,7 @@ class Corx {
   }
 }
 
-export const corx = (generatorFunc: () => Generator, thisArg: any = null) => {
-  const bound = thisArg !== null ? generatorFunc.bind(thisArg) : generatorFunc;
+export const corx = (generatorFunc: () => Generator, thisArg?: any) => {
+  const bound = typeof thisArg !== 'undefined' ? generatorFunc.bind(thisArg) : generatorFunc;
   return new Corx(bound).observable;
 };
