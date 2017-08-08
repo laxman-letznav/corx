@@ -21,8 +21,7 @@ var Corx = (function () {
     return Corx;
 }());
 exports.corx = function (generatorFunc, thisArg) {
-    if (thisArg === void 0) { thisArg = null; }
-    var bound = thisArg !== null ? generatorFunc.bind(thisArg) : generatorFunc;
+    var bound = typeof thisArg !== 'undefined' ? generatorFunc.bind(thisArg) : generatorFunc;
     return new Corx(bound).observable;
 };
 //# sourceMappingURL=corx.js.map
