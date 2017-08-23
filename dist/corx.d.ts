@@ -1,2 +1,4 @@
 import { Observable } from 'rxjs';
-export declare const corx: (generatorFunc: () => Generator, thisArg?: any) => Observable<any>;
+import { CorxContext } from './corx-context';
+export declare const corx: <T>(asyncFunc: (ctx: CorxContext<T>, ...args: any[]) => Promise<any>, ...args: any[]) => Observable<T>;
+export { CorxContext } from './corx-context';

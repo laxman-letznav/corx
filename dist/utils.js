@@ -1,6 +1,4 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isPromise = function (obj) {
-    return obj && typeof obj.subscribe !== 'function' && typeof obj.then === 'function';
-};
+exports.neverResolve = function () { return new Promise(function () { return null; }); };
 //# sourceMappingURL=utils.js.map

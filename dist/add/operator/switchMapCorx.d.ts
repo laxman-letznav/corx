@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
-export declare function switchMapCorx<T>(this: Observable<T>, generatorFunc: (arg?: T) => Generator, thisArg?: any): Observable<any>;
+import { CorxContext } from '../../corx';
+export declare function switchMapCorx<T, S>(this: Observable<T>, asyncFunc: (ctx: CorxContext<S>, arg?: T) => Promise<any>): Observable<S>;
 declare module 'rxjs/Observable' {
     interface Observable<T> {
         switchMapCorx: typeof switchMapCorx;
