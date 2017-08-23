@@ -1,1 +1,1 @@
-export declare const isPromise: (obj: any) => boolean;
+export declare const neverResolve: <T>() => Promise<T>;

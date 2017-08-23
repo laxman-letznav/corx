@@ -1,9 +1,14 @@
 import { Observable, Subscriber, Subscription } from 'rxjs';
 
-import { CorxOpertor, symbols } from './operators';
-import { isPromise } from './utils';
+import { neverResolve } from './utils';
 
-export class CorxRunCtx {
+export interface CorxContext<T> {
+  get: <S>(waitOn: Observable<S>) => Promise<S>;
+  put: (...values: T[]) => Promise<void>;
+  chain: (toChain: Observable<T>) => Promise<T>;
+}
+
+export class CorxRunCtx<T> {
   public get cancel(): () => any {
     return this._onCancel.bind(this);
   }
@@ -13,98 +18,79 @@ export class CorxRunCtx {
   private _waited: Subscription;
 
   constructor(
-    private _generator: Generator,
-    private _subscriber: Subscriber<any>) {
-    this._next({});
+    private _subscriber: Subscriber<T>,
+    _asyncFunc: (ctx: CorxContext<T>, ...args: any[]) => Promise<any>,
+    callArguments: any[]) {
+
+    const context = this._createContext();
+
+    _asyncFunc(context, ...callArguments)
+    .then(() => this._complete(), err => this._error(err));
   }
 
-  private _next({ value, error }: { value?: any, error?: any }): void {
+  private _createContext(): CorxContext<T> {
+    return {
+      get: toWait => this._onWait(toWait),
+      chain: toChain => this._onWait(toChain, true),
+      put: (...args: T[]) => this._onPut(args),
+    };
+  }
+
+  private _onWait<S>(observable: Observable<S>, publishValues: boolean = false): Promise<S> {
+    if (!(observable instanceof Observable)) {
+      this._error(new Error(`wait supports only observables (value: ${observable}).`));
+      return neverResolve();
+    }
+
     if (this._isDone) {
-      return;
+      return neverResolve();
     }
 
-    try {
-      let result: IteratorResult<any>;
-      if (typeof error !== 'undefined') {
-        result = this._generator.throw(error);
-      } else {
-        result = this._generator.next(value);
-      }
+    return new Promise<S>((resolve, reject) => {
+      let lastValue;
+      this._waited = observable.subscribe(nextValue => {
+        lastValue = nextValue;
+        if (publishValues) {
+          this._publish(nextValue as any);
+        }
+      }, error => {
+        this._waited = null;
 
-      if (this._isDone) {
-        return;
-      }
+        if (this._isDone) {
+          return;
+        }
 
-      if (result.done) {
-        this._complete();
-        return;
-      }
+        this._catch(() => reject(error));
+      }, () => {
+        this._waited = null;
 
-      this._processValue(result.value);
-    } catch (ex) {
-      this._error(ex);
-    }
-  }
+        if (this._isDone) {
+          return;
+        }
 
-  private _processValue(value: any): void {
-    if (value instanceof Observable) {
-      this._onWait(value);
-    } else if (isPromise(value)) {
-      this._onPromise(value);
-    } else if (value instanceof CorxOpertor) {
-      const operator = value as CorxOpertor;
-      switch (operator.symbol) {
-        case symbols.put:
-          this._onPut(operator);
-          break;
-        case symbols.chain:
-          this._onWait(operator.args[0], true);
-          break;
-        case symbols.wait:
-          this._onWait(operator.args[0]);
-          break;
-        default:
-          this._error(new Error(`unknown operator: ${operator.symbol}`));
-          break;
-      }
-    } else {
-      this._error(new Error(`must not yield such value: ${value}.`));
-    }
-  }
-
-  private _onPromise(promise: Promise<any>): void {
-    promise.then(
-      value => this._next({ value }),
-      error => this._next({ error })
-    );
-  }
-
-  private _onPut(operator: CorxOpertor): void {
-    operator.args.forEach(arg => this._publish(arg));
-    this._next({});
-  }
-
-  private _onWait(observable: Observable<any>, publishValues: boolean = false): void {
-    let lastValue;
-    this._waited = observable.subscribe(nextValue => {
-      lastValue = nextValue;
-      if (publishValues) {
-        this._publish(nextValue);
-      }
-    }, error => {
-      this._waited = null;
-      this._next({ error });
-    }, () => {
-      this._waited = null;
-      this._next({ value: lastValue });
+        this._catch(() => resolve(lastValue));
+      });
     });
   }
 
-  private _publish(value: any): void {
+  private _onPut(values: T[]): Promise<void> {
+    values.forEach(arg => this._publish(arg));
+    return Promise.resolve();
+   }
+
+  private _publish(value: T): void {
     if (this._isDone) {
       return;
     }
     this._subscriber.next(value);
+  }
+
+  private _catch(callback: () => any): void {
+    try {
+      callback();
+    } catch (err) {
+      this._error(err);
+    }
   }
 
   private _onCancel(): void {

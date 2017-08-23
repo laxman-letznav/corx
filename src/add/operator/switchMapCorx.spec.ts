@@ -2,7 +2,6 @@ import { Observable } from 'rxjs';
 import * as assert from 'assert';
 import 'mocha';
 
-import { put } from '../../';
 import './switchMapCorx';
 
 describe('switchMapCorx', () => {
@@ -13,9 +12,9 @@ describe('switchMapCorx', () => {
     Observable.timer(0, 0)
       .take(3)
       .map(() => ++counter)
-      .switchMapCorx(function*(value: number): Generator {
-        yield put(value);
-        yield put(value * 10);
+      .switchMapCorx(async ({ put }, value: number) => {
+        await put(value);
+        await put(value * 10);
       }).subscribe(next => {
         produced.push(next);
       }, err => {
@@ -31,13 +30,13 @@ describe('switchMapCorx', () => {
 
     Observable
       .generate(1, x => x <= 3, x => x + 1)
-      .switchMapCorx(function*(value: number): Generator {
-        yield put(value);
+      .switchMapCorx(async ({ put, get }, value: number) => {
+        await put(value);
 
-        yield Observable.timer(0, 0).take(1);
+        await get(Observable.timer(0, 0).take(1));
 
         assert.strictEqual(value, 3, 'should never get here unless 3');
-        yield put(value * 10);
+        await put(value * 10);
       }).subscribe(next => {
         produced.push(next);
       }, err => {

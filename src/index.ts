@@ -1,3 +1,2 @@
-export { put, wait, chain } from './operators';
-export { corx } from './corx';
+export { corx, CorxContext } from './corx';
 import './add/operator/switchMapCorx';

@@ -1,15 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var rxjs_1 = require("rxjs");
-var operators_1 = require("./operators");
 var utils_1 = require("./utils");
 var CorxRunCtx = (function () {
-    function CorxRunCtx(_generator, _subscriber) {
-        this._generator = _generator;
+    function CorxRunCtx(_subscriber, _asyncFunc, callArguments) {
+        var _this = this;
         this._subscriber = _subscriber;
         this._isCanceled = false;
         this._isDone = false;
-        this._next({});
+        var context = this._createContext();
+        _asyncFunc.apply(void 0, [context].concat(callArguments)).then(function () { return _this._complete(); }, function (err) { return _this._error(err); });
     }
     Object.defineProperty(CorxRunCtx.prototype, "cancel", {
         get: function () {
@@ -18,91 +18,70 @@ var CorxRunCtx = (function () {
         enumerable: true,
         configurable: true
     });
-    CorxRunCtx.prototype._next = function (_a) {
-        var value = _a.value, error = _a.error;
-        if (this._isDone) {
-            return;
-        }
-        try {
-            var result = void 0;
-            if (typeof error !== 'undefined') {
-                result = this._generator.throw(error);
-            }
-            else {
-                result = this._generator.next(value);
-            }
-            if (this._isDone) {
-                return;
-            }
-            if (result.done) {
-                this._complete();
-                return;
-            }
-            this._processValue(result.value);
-        }
-        catch (ex) {
-            this._error(ex);
-        }
-    };
-    CorxRunCtx.prototype._processValue = function (value) {
-        if (value instanceof rxjs_1.Observable) {
-            this._onWait(value);
-        }
-        else if (utils_1.isPromise(value)) {
-            this._onPromise(value);
-        }
-        else if (value instanceof operators_1.CorxOpertor) {
-            var operator = value;
-            switch (operator.symbol) {
-                case operators_1.symbols.put:
-                    this._onPut(operator);
-                    break;
-                case operators_1.symbols.chain:
-                    this._onWait(operator.args[0], true);
-                    break;
-                case operators_1.symbols.wait:
-                    this._onWait(operator.args[0]);
-                    break;
-                default:
-                    this._error(new Error("unknown operator: " + operator.symbol));
-                    break;
-            }
-        }
-        else {
-            this._error(new Error("must not yield such value: " + value + "."));
-        }
-    };
-    CorxRunCtx.prototype._onPromise = function (promise) {
+    CorxRunCtx.prototype._createContext = function () {
         var _this = this;
-        promise.then(function (value) { return _this._next({ value: value }); }, function (error) { return _this._next({ error: error }); });
-    };
-    CorxRunCtx.prototype._onPut = function (operator) {
-        var _this = this;
-        operator.args.forEach(function (arg) { return _this._publish(arg); });
-        this._next({});
+        return {
+            get: function (toWait) { return _this._onWait(toWait); },
+            chain: function (toChain) { return _this._onWait(toChain, true); },
+            put: function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                return _this._onPut(args);
+            },
+        };
     };
     CorxRunCtx.prototype._onWait = function (observable, publishValues) {
         var _this = this;
         if (publishValues === void 0) { publishValues = false; }
-        var lastValue;
-        this._waited = observable.subscribe(function (nextValue) {
-            lastValue = nextValue;
-            if (publishValues) {
-                _this._publish(nextValue);
-            }
-        }, function (error) {
-            _this._waited = null;
-            _this._next({ error: error });
-        }, function () {
-            _this._waited = null;
-            _this._next({ value: lastValue });
+        if (!(observable instanceof rxjs_1.Observable)) {
+            this._error(new Error("wait supports only observables (value: " + observable + ")."));
+            return utils_1.neverResolve();
+        }
+        if (this._isDone) {
+            return utils_1.neverResolve();
+        }
+        return new Promise(function (resolve, reject) {
+            var lastValue;
+            _this._waited = observable.subscribe(function (nextValue) {
+                lastValue = nextValue;
+                if (publishValues) {
+                    _this._publish(nextValue);
+                }
+            }, function (error) {
+                _this._waited = null;
+                if (_this._isDone) {
+                    return;
+                }
+                _this._catch(function () { return reject(error); });
+            }, function () {
+                _this._waited = null;
+                if (_this._isDone) {
+                    return;
+                }
+                _this._catch(function () { return resolve(lastValue); });
+            });
         });
+    };
+    CorxRunCtx.prototype._onPut = function (values) {
+        var _this = this;
+        values.forEach(function (arg) { return _this._publish(arg); });
+        return Promise.resolve();
     };
     CorxRunCtx.prototype._publish = function (value) {
         if (this._isDone) {
             return;
         }
         this._subscriber.next(value);
+    };
+    CorxRunCtx.prototype._catch = function (callback) {
+        try {
+            callback();
+        }
+        catch (err) {
+            this._error(err);
+        }
     };
     CorxRunCtx.prototype._onCancel = function () {
         if (!this._trySetDone()) {

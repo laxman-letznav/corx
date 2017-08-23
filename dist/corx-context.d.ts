@@ -1,18 +1,21 @@
-import { Subscriber } from 'rxjs';
-export declare class CorxRunCtx {
-    private _generator;
+import { Observable, Subscriber } from 'rxjs';
+export interface CorxContext<T> {
+    get: <S>(waitOn: Observable<S>) => Promise<S>;
+    put: (...values: T[]) => Promise<void>;
+    chain: (toChain: Observable<T>) => Promise<T>;
+}
+export declare class CorxRunCtx<T> {
     private _subscriber;
     readonly cancel: () => any;
     private _isCanceled;
     private _isDone;
     private _waited;
-    constructor(_generator: Generator, _subscriber: Subscriber<any>);
-    private _next({value, error});
-    private _processValue(value);
-    private _onPromise(promise);
-    private _onPut(operator);
-    private _onWait(observable, publishValues?);
+    constructor(_subscriber: Subscriber<T>, _asyncFunc: (ctx: CorxContext<T>, ...args: any[]) => Promise<any>, callArguments: any[]);
+    private _createContext();
+    private _onWait<S>(observable, publishValues?);
+    private _onPut(values);
     private _publish(value);
+    private _catch(callback);
     private _onCancel();
     private _complete();
     private _error(error);
