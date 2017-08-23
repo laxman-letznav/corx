@@ -1,9 +1,9 @@
 import { Observable } from 'rxjs';
 
-import { corx } from '../../corx';
+import { corx, CorxContext } from '../../corx';
 
-export function switchMapCorx<T>(this: Observable<T>, generatorFunc: (arg?: T) => Generator, thisArg?: any): Observable<any> {
-  return this.switchMap((...args) => corx(generatorFunc.bind(thisArg, ...args)));
+export function switchMapCorx<T, S>(this: Observable<T>, asyncFunc: (ctx: CorxContext<S>, arg?: T) => Promise<any>): Observable<S> {
+  return this.switchMap<T, S>((...args) => corx<S>(asyncFunc, ...args));
 }
 
 Observable.prototype.switchMapCorx = switchMapCorx;
