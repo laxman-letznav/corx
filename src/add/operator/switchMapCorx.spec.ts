@@ -30,10 +30,10 @@ describe('switchMapCorx', () => {
 
     Observable
       .generate(1, x => x <= 3, x => x + 1)
-      .switchMapCorx(async ({ put, wait }, value: number) => {
+      .switchMapCorx(async ({ put, get }, value: number) => {
         await put(value);
 
-        await wait(Observable.timer(0, 0).take(1));
+        await get(Observable.timer(0, 0).take(1));
 
         assert.strictEqual(value, 3, 'should never get here unless 3');
         await put(value * 10);

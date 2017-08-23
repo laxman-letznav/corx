@@ -3,7 +3,7 @@ import { Observable, Subscriber, Subscription } from 'rxjs';
 import { neverResolve } from './utils';
 
 export interface CorxContext<T> {
-  wait: <S>(waitOn: Observable<S>) => Promise<S>;
+  get: <S>(waitOn: Observable<S>) => Promise<S>;
   put: (...values: T[]) => Promise<void>;
   chain: (toChain: Observable<T>) => Promise<T>;
 }
@@ -30,7 +30,7 @@ export class CorxRunCtx<T> {
 
   private _createContext(): CorxContext<T> {
     return {
-      wait: toWait => this._onWait(toWait),
+      get: toWait => this._onWait(toWait),
       chain: toChain => this._onWait(toChain, true),
       put: (...args: T[]) => this._onPut(args),
     };

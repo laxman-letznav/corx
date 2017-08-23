@@ -10,8 +10,8 @@ describe('corx', () => {
   it('waits for obserbable and returns last value', done => {
     let beenToEnd = false;
 
-    corx(async ({ wait }) => {
-      const data = await wait(Observable.timer(1, 1).take(2).map(() => 3));
+    corx(async ({ get }) => {
+      const data = await get(Observable.timer(1, 1).take(2).map(() => 3));
       assert.equal(data, 3);
 
       const data2 = await Observable.timer(1, 1).take(2).map(() => 4).toPromise();
@@ -34,10 +34,10 @@ describe('corx', () => {
 
     let cancel;
 
-    const subscription = corx(async ({ wait }) => {
-      await wait(Observable.timer(0, 0).take(1));
+    const subscription = corx(async ({ get }) => {
+      await get(Observable.timer(0, 0).take(1));
 
-      await wait(Observable.create(subscriber => {
+      await get(Observable.create(subscriber => {
         setTimeout(cancel, 0);
         setTimeout(() => subscriber.complete(), 0);
 
@@ -69,7 +69,7 @@ describe('corx', () => {
     let beenToEnd = false;
     const produced = [];
 
-    corx(async ({ wait, chain }) => {
+    corx(async ({ get, chain }) => {
       let counter = 0;
       await chain(Observable.timer(0, 1).take(3).map(() => ++counter));
       beenToEnd = true;
@@ -89,15 +89,15 @@ describe('corx', () => {
     let subscribeCalled = false;
     let cancel;
 
-    const subscription = corx(async ({ wait, chain }) => {
-      await wait(Observable.timer(0, 0).take(1));
+    const subscription = corx(async ({ get, chain }) => {
+      await get(Observable.timer(0, 0).take(1));
 
-      await chain(corx(async ({ wait }) => {
-        await wait(Observable.timer(0, 0).take(1));
+      await chain(corx(async ({ get }) => {
+        await get(Observable.timer(0, 0).take(1));
 
         cancel();
 
-        await wait(Observable.create(subscriber => {
+        await get(Observable.create(subscriber => {
           subscribeCalled = true;
         }));
 
@@ -129,7 +129,7 @@ describe('corx', () => {
     let beenToEnd = false;
     const produced = [];
 
-    corx(async ({ wait, put }) => {
+    corx(async ({ get, put }) => {
       await put(1);
       await put(2, 3);
 
@@ -146,8 +146,8 @@ describe('corx', () => {
   });
 
   it('propagates error outside', done => {
-    corx(async ({ wait }) => {
-      await wait(Observable.timer(0, 1000).take(1));
+    corx(async ({ get }) => {
+      await get(Observable.timer(0, 1000).take(1));
 
       throw new Error('ups');
     }).subscribe(next => {
@@ -163,9 +163,9 @@ describe('corx', () => {
   it('propagates error', done => {
     let beenToEnd = false;
 
-    corx(async ({ wait }) => {
+    corx(async ({ get }) => {
       try {
-        await wait(Observable.timer(0, 0).take(1).switchMap(() => Observable.throw(new Error('ups'))));
+        await get(Observable.timer(0, 0).take(1).switchMap(() => Observable.throw(new Error('ups'))));
         assert.fail('error unnoticed');
       } catch (err) {
         assert.equal(err.message, 'ups');
@@ -184,8 +184,8 @@ describe('corx', () => {
   it('propagates error outside 2', done => {
     let beenToEnd = false;
 
-    corx(async ({ wait }) => {
-      await wait(Observable.timer(0, 0).take(1).switchMap(() => Observable.throw(new Error('ups'))));
+    corx(async ({ get }) => {
+      await get(Observable.timer(0, 0).take(1).switchMap(() => Observable.throw(new Error('ups'))));
       beenToEnd = true;
     }).subscribe(next => {
       assert.fail('no next');
@@ -201,8 +201,8 @@ describe('corx', () => {
   it('throws error on wait of unknown value', done => {
     let beenToEnd = false;
 
-    corx(async ({ wait }) => {
-      await wait(10 as any);
+    corx(async ({ get }) => {
+      await get(10 as any);
       beenToEnd = true;
     }).subscribe(next => {
       assert.fail('no next');
@@ -218,7 +218,7 @@ describe('corx', () => {
   it('passes additional arguments', done => {
     let beenToEnd = false;
 
-    corx(async ({ wait }, arg0, arg1) => {
+    corx(async ({ get }, arg0, arg1) => {
       assert.equal(arg0, 3);
       assert.equal(arg1, 4);
       beenToEnd = true;
@@ -236,7 +236,7 @@ describe('corx', () => {
     let beenToEnd = false;
     const produced = [];
 
-    corx(async ({ wait, put, chain }) => {
+    corx(async ({ get, put, chain }) => {
       await put(1, 2);
 
       try {
@@ -253,14 +253,14 @@ describe('corx', () => {
       await put(5);
 
       try {
-        await chain(corx(async ({ wait, put, chain }) => {
-          await wait(Observable.timer(0, 0).take(1));
+        await chain(corx(async ({ get, put, chain }) => {
+          await get(Observable.timer(0, 0).take(1));
 
           await put(6);
 
           await chain(Observable.timer(0, 0).take(1).switchMap(() => Observable.from([7, 8])));
 
-          await wait(Observable.timer(0, 0).switchMap(() => Observable.throw(new Error('err2'))));
+          await get(Observable.timer(0, 0).switchMap(() => Observable.throw(new Error('err2'))));
         }));
         assert.fail('error undetected');
       } catch (err) {
@@ -268,8 +268,8 @@ describe('corx', () => {
         await put(9);
       }
 
-      const value = await wait(corx(async ({ wait, put }) => {
-        await wait(Observable.timer(0, 0).take(1));
+      const value = await get(corx(async ({ get, put }) => {
+        await get(Observable.timer(0, 0).take(1));
         await put(10);
       }));
       assert.equal(value, 10);

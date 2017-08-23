@@ -21,7 +21,7 @@ var CorxRunCtx = (function () {
     CorxRunCtx.prototype._createContext = function () {
         var _this = this;
         return {
-            wait: function (toWait) { return _this._onWait(toWait); },
+            get: function (toWait) { return _this._onWait(toWait); },
             chain: function (toChain) { return _this._onWait(toChain, true); },
             put: function () {
                 var args = [];

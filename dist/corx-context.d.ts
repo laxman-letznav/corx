@@ -1,6 +1,6 @@
 import { Observable, Subscriber } from 'rxjs';
 export interface CorxContext<T> {
-    wait: <S>(waitOn: Observable<S>) => Promise<S>;
+    get: <S>(waitOn: Observable<S>) => Promise<S>;
     put: (...values: T[]) => Promise<void>;
     chain: (toChain: Observable<T>) => Promise<T>;
 }
