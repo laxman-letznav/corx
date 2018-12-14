@@ -1,5 +1,5 @@
 {
-  "name": "corx",
+  "name": "@letznav/corx",
   "version": "2.0.0",
   "description": "Generator to RxJs Observable convertor",
   "main": "dist/index.js",
@@ -21,14 +21,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/salsita/corx.git"
+    "url": "git+https://github.com/laxman-letznav/corx.git"
   },
-  "author": "Salsita",
+  "author": "letzNav",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/salsita/corx/issues"
+    "url": "https://github.com/laxman-letznav/corx/issues"
   },
-  "homepage": "https://github.com/salsita/corx#readme",
+  "homepage": "https://github.com/laxman-letznav/corx#readme",
   "keywords": [
     "Observables",
     "Observable",
