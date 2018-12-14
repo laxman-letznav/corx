@@ -1,5 +1,5 @@
 {
-  "name": "@letznav/corx",
+  "name": "corx",
   "version": "2.0.0",
   "description": "Generator to RxJs Observable convertor",
   "main": "dist/index.js",
